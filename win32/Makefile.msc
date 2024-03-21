@@ -3,7 +3,7 @@
 #
 # Usage:
 #   nmake -f win32/Makefile.msc                          (standard build)
-#   nmake -f win32/Makefile.msc LOC=-DFOO                (nonstandard build)
+#   nmake -f win32/Makefile.msc EXTRA_CFLAGS=-DFOO  EXTRA_LDFLAGS=foo.lib  (nonstandard build)
 
 # The toplevel directory of the source tree.
 #
@@ -13,19 +13,21 @@ TOP = .
 LOC =
 
 # variables
-STATICLIB = zlib.lib
-SHAREDLIB = zlib1.dll
-IMPLIB    = zdll.lib
+SHORTNAME = z
+TARGET    = zlib
+STATICLIB = $(TARGET).lib
+SHAREDLIB = $(TARGET).dll
+IMPLIB    = $(TARGET).lib
 
 CC = cl
 AS = ml
 LD = link
 AR = lib
 RC = rc
-CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -Fd"zlib" $(LOC)
+CFLAGS  = -nologo -W3 -Zi -Fd"zlib" $(EXTRA_CFLAGS)
 WFLAGS  = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 ASFLAGS = -coff -Zi $(LOC)
-LDFLAGS = -nologo -debug -incremental:no -opt:ref
+LDFLAGS = -nologo $(EXTRA_LDFLAGS)
 ARFLAGS = -nologo
 RCFLAGS = /dWIN32 /r
 
@@ -35,8 +37,15 @@ OBJA =
 
 
 # targets
-all: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) \
-     example.exe minigzip.exe example_d.exe minigzip_d.exe
+
+all_static: $(STATICLIB) example.exe minigzip.exe example_d.exe minigzip_d.exe
+
+# When building $(SHORTNAME).dll, do not build examples due to confusion
+# between STATICLIB (zlib.lib) and IMPLIB (also zlib.lib)
+
+$(SHORTNAME).dll:	$(SHAREDLIB)
+
+$(SHORTNAME).lib:	all_static
 
 $(STATICLIB): $(OBJS) $(OBJA)
 	$(AR) $(ARFLAGS) -out:$@ $(OBJS) $(OBJA)
